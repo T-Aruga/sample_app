@@ -34,7 +34,7 @@ $ rails db:migrate
 $ rails test
 ```
 
-テストが無事に通ったら、Railsサーバーを立ち上げる準備が整っているはずです。
+テストが無事に通ったら、Railsサーバーを立ち上げる準備が整っているは
 
 ```
 $ rails server
