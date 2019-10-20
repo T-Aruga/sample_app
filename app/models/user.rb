@@ -1,8 +1,9 @@
 class User < ApplicationRecord
   # インスタンス変数の定義
-  attr_accessor :remember_token
+  attr_accessor :remember_token, :activation_token
+  before_save   :downcase_email
+  before_create :create_activation_digest
   
-  before_save { self.email = email.downcase }
   validates :name,  presence: true, length: { maximum: 50 }
   VALID_EMAIL_REGEX = /\A[\w+\-.]+@[a-z\d\-.]+\.[a-z]+\z/i
   validates :email, presence: true, length: { maximum: 255 },
@@ -33,16 +34,39 @@ class User < ApplicationRecord
   end
   
   # 渡されたトークンがダイジェストと一致したらtrueを返す
-  def authenticated?(remember_token)
-    if remember_digest.nil?
-      false
-    else
-      BCrypt::Password.new(remember_digest).is_password?(remember_token)
-    end
+  def authenticated?(attribute, token)
+      digest = send("#{attribute}_digest")
+      return false if digest.nil?
+      BCrypt::Password.new(digest).is_password?(token)
   end
   
   # ユーザーのログイン情報を破棄する
   def forget
     update_attribute(:remember_digest, nil)
+  end
+  
+  # アカウントを有効にする
+  def activate
+    update_columns(activated: true, activated_at: Time.zone.now)
+  end
+
+  # 有効化用のメールを送信する
+  def send_activation_email
+    UserMailer.account_activation(self).deliver_now
+  end
+  
+private
+
+  # メールアドレスを全て小文字にする
+
+  def downcase_email
+    email.downcase!                                                             # emailを小文字化してUserオブジェクトのemail属性に代入
+  end
+
+  # 有効化トークンとダイジェストを作成および代入する
+
+  def create_activation_digest
+    self.activation_token   =   User.new_token                                  # ハッシュ化した記憶トークンを有効化トークン属性に代入
+    self.activation_digest  =   User.digest(activation_token)                   # 有効化トークンをBcryptで暗号化し、有効化ダイジェスト属性に代入
   end
 end
