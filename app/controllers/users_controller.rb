@@ -14,6 +14,7 @@ before_action :admin_user,     only: :destroy
   
   def show
     @user = User.find(params[:id])                                              # paramsで:idパラメータを受け取る(/users/1にアクセスしたら1を受け取る)
+    @microposts = @user.microposts.paginate(page: params[:page])                # pageを受け取ってmicropostsに渡して表示する。
     redirect_to root_url and return unless @user.activated?                     # activatedがfalseならルートURLヘリダイレクト
   end
   
@@ -54,15 +55,6 @@ before_action :admin_user,     only: :destroy
     end
     
     # beforeアクション
-
-    # ログイン済みユーザーかどうか確認
-    def logged_in_user
-      unless logged_in?
-        store_location
-        flash[:danger] = "Please log in."
-        redirect_to login_url
-      end
-    end
 
     def correct_user                                                            # 正しいユーザーかどうか確認
       @user = User.find(params[:id])                                            # URLのidの値と同じユーザーを@userに代入
